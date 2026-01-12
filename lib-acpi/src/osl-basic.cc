@@ -2,11 +2,17 @@
 #include <l4/sys/kip>
 
 __BEGIN_DECLS
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wextern-c-compat"
 #include "acpi.h"
 #include "accommon.h"
 #include "actables.h"
 #include "acpiosxf.h"
 #include "actypes.h"
+#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 __END_DECLS
 
 #include <stdlib.h>
