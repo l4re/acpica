@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2025, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2026, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -710,6 +710,11 @@ AcpiInstallMethod (
 
     ParserState.Aml += AcpiPsGetOpcodeSize (Opcode);
     ParserState.PkgEnd = AcpiPsGetNextPackageEnd (&ParserState);
+    if ((ParserState.PkgEnd > ParserState.AmlEnd) ||
+        (ParserState.PkgEnd < ParserState.Aml))
+    {
+        return (AE_AML_PACKAGE_LIMIT);
+    }
     Path = AcpiPsGetNextNamestring (&ParserState);
 
     MethodFlags = *ParserState.Aml++;
@@ -805,7 +810,7 @@ AcpiInstallMethod (
 ErrorExit:
 
     ACPI_FREE (AmlBuffer);
-    ACPI_FREE (MethodObj);
+    AcpiUtDeleteObjectDesc (MethodObj);
     return (Status);
 }
 

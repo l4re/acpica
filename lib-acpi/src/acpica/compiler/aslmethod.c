@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2025, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2026, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -540,7 +540,7 @@ MtMethodAnalysisWalkBegin (
 
         if (!HidExists && !AdrExists)
         {
-            AslError (ASL_ERROR, ASL_MSG_MISSING_DEPENDENCY, Op,
+            AslError (ASL_WARNING, ASL_MSG_MISSING_DEPENDENCY, Op,
                 "Device object requires a _HID or _ADR");
         }
         else if (HidExists && AdrExists)

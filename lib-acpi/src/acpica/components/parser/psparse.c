@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2025, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2026, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -221,6 +221,10 @@ AcpiPsPeekOpcode (
 
 
     Aml = ParserState->Aml;
+    if (Aml >= ParserState->AmlEnd)
+    {
+        return (0xFFFF);
+    }
     Opcode = (UINT16) ACPI_GET8 (Aml);
 
     if (Opcode == AML_EXTENDED_PREFIX)
@@ -228,6 +232,10 @@ AcpiPsPeekOpcode (
         /* Extended opcode, get the second opcode byte */
 
         Aml++;
+        if (Aml >= ParserState->AmlEnd)
+        {
+            return (0xFFFF);
+        }
         Opcode = (UINT16) ((Opcode << 8) | ACPI_GET8 (Aml));
     }
 
@@ -449,6 +457,7 @@ AcpiPsNextParseState (
 {
     ACPI_PARSE_STATE        *ParserState = &WalkState->ParserState;
     ACPI_STATUS             Status = AE_CTRL_PENDING;
+    UINT8                   *Aml;
 
 
     ACPI_FUNCTION_TRACE_PTR (PsNextParseState, Op);
@@ -496,7 +505,15 @@ AcpiPsNextParseState (
          * Predicate of an IF was true, and we are at the matching ELSE.
          * Just close out this package
          */
+        Aml = ParserState->Aml;
+
         ParserState->Aml = AcpiPsGetNextPackageEnd (ParserState);
+        if ((ParserState->Aml > ParserState->AmlEnd) ||
+            (ParserState->Aml < Aml))
+        {
+            Status = AE_AML_PACKAGE_LIMIT;
+            break;
+        }
         Status = AE_CTRL_PENDING;
         break;
 

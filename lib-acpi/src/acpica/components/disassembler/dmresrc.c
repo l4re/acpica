@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2025, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2026, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -365,6 +365,9 @@ AcpiDmResourceTemplate (
     UINT32                  CurrentByteOffset;
     UINT8                   ResourceType;
     UINT32                  ResourceLength;
+    UINT32                  DescriptorLength;
+    UINT32                  HeaderLength;
+    UINT32                  RemainingBytes;
     void                    *Aml;
     UINT32                  Level;
     BOOLEAN                 DependentFns = FALSE;
@@ -388,11 +391,32 @@ AcpiDmResourceTemplate (
     for (CurrentByteOffset = 0; CurrentByteOffset < ByteCount;)
     {
         Aml = &ByteData[CurrentByteOffset];
+        RemainingBytes = ByteCount - CurrentByteOffset;
 
-        /* Get the descriptor type and length */
+        /* Get the descriptor type and validate header availability */
 
         ResourceType = AcpiUtGetResourceType (Aml);
+        HeaderLength = AcpiUtGetResourceHeaderLength (Aml);
+        if (RemainingBytes < HeaderLength)
+        {
+            AcpiOsPrintf (
+                "/*** Resource descriptor header length %u exceeds available data %u at offset %u ***/\n",
+                HeaderLength, RemainingBytes, CurrentByteOffset);
+            return;
+        }
+
         ResourceLength = AcpiUtGetResourceLength (Aml);
+
+        /* Validate descriptor bounds before reading/processing descriptor body */
+
+        DescriptorLength = AcpiUtGetDescriptorLength (Aml);
+        if (RemainingBytes < DescriptorLength)
+        {
+            AcpiOsPrintf (
+                "/*** Resource descriptor length %u exceeds available data %u at offset %u ***/\n",
+                DescriptorLength, RemainingBytes, CurrentByteOffset);
+            return;
+        }
 
         /* Validate the Resource Type and Resource Length */
 
@@ -407,7 +431,7 @@ AcpiDmResourceTemplate (
 
         /* Point to next descriptor */
 
-        CurrentByteOffset += AcpiUtGetDescriptorLength (Aml);
+        CurrentByteOffset += DescriptorLength;
 
         /* Descriptor pre-processing */
 
@@ -536,8 +560,29 @@ AcpiDmIsResourceTemplate (
         return (AE_TYPE);
     }
 
+    /*
+     * Check if this op was allocated from the extended parse object cache.
+     * Only extended ops (NAMED_OBJECT, DEFERRED, BYTELIST) have the
+     * Named.Data and Named.Length fields. Generic ops would overflow.
+     */
+    if (NextOp->Common.Flags == ACPI_PARSEOP_GENERIC)
+    {
+        return (AE_TYPE);
+    }
+
     Aml = NextOp->Named.Data;
     BufferLength = NextOp->Common.Value.Size;
+
+    /*
+     * Validate BufferLength against Named.Length to prevent reading
+     * beyond the actual data. Named.Length is computed during parsing
+     * and represents the actual byte count, while Value.Size comes
+     * from the AML and can be manipulated by malformed AML.
+     */
+    if (BufferLength > NextOp->Named.Length)
+    {
+        return (AE_TYPE);
+    }
 
     /*
      * Any buffer smaller than one byte cannot possibly be a resource
