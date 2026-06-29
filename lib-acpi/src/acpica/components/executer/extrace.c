@@ -301,7 +301,11 @@ AcpiExTraceArgs(ACPI_OPERAND_OBJECT **Params, UINT32 Count)
         switch (obj_desc->Common.Type)
         {
         case ACPI_TYPE_INTEGER:
+#ifdef L4_ACPICA
+            ACPI_DEBUG_PRINT_RAW((ACPI_DB_TRACE_POINT, "%llx", obj_desc->Integer.Value));
+#else
             ACPI_DEBUG_PRINT_RAW((ACPI_DB_TRACE_POINT, "%lx", obj_desc->Integer.Value));
+#endif
             break;
 
         case ACPI_TYPE_STRING:
